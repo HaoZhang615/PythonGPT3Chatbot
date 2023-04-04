@@ -6,23 +6,18 @@ import openai
 load_dotenv()
 # set the API key for the openai library
 openai.api_type = "azure"
-openai.api_base = "https://cog-openai-csu-ch-learning-eus.openai.azure.com/"
-openai.api_version = "2022-12-01"
+openai.api_base = os.getenv("AOAI_EUS_API_BASE")
+openai.api_version = "2023-03-15-preview"
 openai.api_key = os.getenv("AOAI_EUS_API_KEY")
 
-def gpt3_completion(prompt, engine='text-davinci-002-eus', temp=1, top_p=1.0, tokens=400, freq_pen=0.0, pres_pen=0.0, stop=['OpenAI Assistant:', 'User:']):
-    prompt = prompt.encode(encoding='ASCII',errors='ignore').decode()
-    response = openai.Completion.create(
+# prompt = "This is a test."
+conversation=[{"role": "system", "content": "You are a helpful assistant."}]
+
+def gpt4_completion(engine='gpt-35-turbo-version0301-eus', message= conversation):
+    response = openai.ChatCompletion.create(
         engine=engine,
-        prompt=prompt,
-        temperature=temp,
-        max_tokens=tokens,
-        top_p=top_p,
-        frequency_penalty=freq_pen,
-        presence_penalty=pres_pen,
-        stop=stop)
-    text = response['choices'][0]['text'].strip()
-    return text
+        messages=message)
+    return response
 
 #This below line of code checks if the script is being run as the main program or being imported as a module. 
 #If the script is being run as the main program, then the code block following this line will be executed. 
@@ -38,17 +33,12 @@ if __name__ == '__main__':
 # as long as there is no 'bye' in the user input, the conversation continues
     while ('bye' not in (user_input).lower()):
         user_input = input('User: ')
-        # ignore case when user does not add punctuation at the end of the sentence
-        if user_input[-1] not in ['.', '?', '!']:
-            user_input += '.'
-        else:
-            user_input += ''
         # add user input to the conversation
-        conversation.append('User: %s' % user_input)
+        conversation.append({"role": "user", "content": user_input})
         # add new line to the conversation
         dialog = '\n'.join(conversation)
         # get completion from GPT-3 using the dialog as prompt
-        completion = gpt3_completion(dialog)
+        completion = gpt4_completion(dialog)
         # add completion to the conversation
         conversation.append(completion)
         # add new line to the conversation for the next iteration
@@ -57,3 +47,15 @@ if __name__ == '__main__':
         print('OpenAI Assistant: %s' % completion)
     # print the conversation ended message
     print('Conversation ended')
+
+while(True):
+    user_input = input()      
+    conversation.append({"role": "user", "content": user_input})
+
+    response = openai.ChatCompletion.create(
+        engine="gpt-35-turbo-version0301-eus", # The deployment name you chose when you deployed the ChatGPT or GPT-4 model.
+        messages = conversation
+    )
+
+    conversation.append({"role": "assistant", "content": response['choices'][0]['message']['content']})
+    print("\n" + response['choices'][0]['message']['content'] + "\n")
